@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  horeca-ai:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./instance:/app/instance   # persist SQLite DB
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
