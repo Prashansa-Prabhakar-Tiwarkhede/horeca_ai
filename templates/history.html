@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}History — HORECA AI{% endblock %}
+{% block page_title %}Prediction History{% endblock %}
+
+{% block content %}
+<div class="section-card">
+  <div class="section-header">
+    <h3>📋 All Predictions</h3>
+    <a href="{{ url_for('main.predict') }}" class="btn-primary sm">+ New Prediction</a>
+  </div>
+
+  {% if preds %}
+  <div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Date &amp; Time</th><th>Meal Time</th><th>Service</th>
+        <th>Day</th><th>Customers</th><th>Price (₹)</th>
+        <th>Pred. Demand</th><th>Sugg. Qty</th><th>Pred. Waste</th><th>Risk</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in preds %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ p['created_at'][:16] }}</td>
+        <td>{{ p['meal_time'] }}</td>
+        <td>{{ p['service_type'] }}</td>
+        <td>{{ p['day_type'] }}</td>
+        <td>{{ p['customers_count'] }}</td>
+        <td>₹{{ p['checkout_price'] }}</td>
+        <td><strong>{{ p['pred_demand'] }}</strong></td>
+        <td>{{ p['pred_quantity'] }}</td>
+        <td>{{ p['pred_wastage'] }}</td>
+        <td><span class="badge badge-{{ p['alert']|lower }}">{{ p['alert'] }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>No predictions yet. <a href="{{ url_for('main.predict') }}">Make your first prediction →</a></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

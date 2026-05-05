@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — HORECA AI{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- KPI Cards -->
+<div class="kpi-grid">
+  <div class="kpi-card accent-green">
+    <div class="kpi-icon">📦</div>
+    <div class="kpi-info">
+      <div class="kpi-value">{{ total_preds }}</div>
+      <div class="kpi-label">Total Predictions</div>
+    </div>
+  </div>
+  <div class="kpi-card accent-orange">
+    <div class="kpi-icon">⚠️</div>
+    <div class="kpi-info">
+      <div class="kpi-value">{{ high_alerts }}</div>
+      <div class="kpi-label">High Risk Alerts</div>
+    </div>
+  </div>
+  <div class="kpi-card accent-blue">
+    <div class="kpi-icon">🍽️</div>
+    <div class="kpi-info">
+      <div class="kpi-value">{{ avg_demand }}</div>
+      <div class="kpi-label">Avg Predicted Demand</div>
+    </div>
+  </div>
+  <div class="kpi-card accent-red">
+    <div class="kpi-icon">🗑️</div>
+    <div class="kpi-info">
+      <div class="kpi-value">{{ avg_waste }}</div>
+      <div class="kpi-label">Avg Predicted Wastage</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="charts-row">
+  <div class="chart-card wide">
+    <div class="chart-header">
+      <h3>📈 Your Prediction Trends</h3>
+      <span class="chart-sub">Last 10 predictions</span>
+    </div>
+    <canvas id="trendChart" height="100"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <h3>🥗 Wastage by Meal Time</h3>
+    </div>
+    <canvas id="mealChart" height="200"></canvas>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="chart-header">
+      <h3>🏪 Wastage by Service Type</h3>
+    </div>
+    <canvas id="serviceChart" height="200"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <h3>📅 Orders: Weekday vs Weekend</h3>
+    </div>
+    <canvas id="dayChart" height="200"></canvas>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="section-card">
+  <div class="section-header">
+    <h3>🕐 Recent Predictions</h3>
+    <a href="{{ url_for('main.predict') }}" class="btn-primary sm">New Prediction</a>
+  </div>
+  {% if recent %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date/Time</th><th>Meal</th><th>Service</th><th>Day</th>
+        <th>Demand</th><th>Wastage</th><th>Qty</th><th>Risk</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in recent %}
+      <tr>
+        <td>{{ p['created_at'][:16] }}</td>
+        <td>{{ p['meal_time'] }}</td>
+        <td>{{ p['service_type'] }}</td>
+        <td>{{ p['day_type'] }}</td>
+        <td>{{ p['pred_demand'] }}</td>
+        <td>{{ p['pred_wastage'] }}</td>
+        <td>{{ p['pred_quantity'] }}</td>
+        <td><span class="badge badge-{{ p['alert']|lower }}">{{ p['alert'] }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p>No predictions yet. <a href="{{ url_for('main.predict') }}">Make your first prediction →</a></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('/api/dashboard-stats').then(r=>r.json()).then(data => {
+  const C = Chart.defaults;
+  C.color = '#a0aec0';
+  C.borderColor = 'rgba(255,255,255,0.05)';
+
+  // Trend chart
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [
+        { label: 'Demand',   data: data.demand,   borderColor:'#48bb78', backgroundColor:'rgba(72,187,120,0.1)', tension:0.4, fill:true },
+        { label: 'Wastage',  data: data.wastage,  borderColor:'#fc8181', backgroundColor:'rgba(252,129,129,0.1)', tension:0.4, fill:true },
+        { label: 'Quantity', data: data.quantity, borderColor:'#63b3ed', backgroundColor:'rgba(99,179,237,0.1)',  tension:0.4, fill:true },
+      ]
+    },
+    options: { plugins:{legend:{position:'top'}}, scales:{ x:{grid:{color:'rgba(255,255,255,0.05)'}}, y:{grid:{color:'rgba(255,255,255,0.05)'}} } }
+  });
+
+  // Meal donut
+  const meals = data.waste_by_meal;
+  new Chart(document.getElementById('mealChart'), {
+    type: 'doughnut',
+    data: { labels: Object.keys(meals), datasets:[{ data: Object.values(meals), backgroundColor:['#48bb78','#f6ad55','#63b3ed'], borderWidth:2, borderColor:'#1a1f2e' }] },
+    options: { plugins:{legend:{position:'bottom'}} }
+  });
+
+  // Service bar
+  const svc = data.waste_by_service;
+  new Chart(document.getElementById('serviceChart'), {
+    type: 'bar',
+    data: { labels: Object.keys(svc), datasets:[{ label:'Avg Wastage', data: Object.values(svc), backgroundColor:['#9f7aea','#f6ad55','#fc8181'], borderRadius:6 }] },
+    options: { plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'rgba(255,255,255,0.05)'}}, y:{grid:{color:'rgba(255,255,255,0.05)'}} } }
+  });
+
+  // Day pie
+  const days = data.orders_by_day;
+  new Chart(document.getElementById('dayChart'), {
+    type: 'pie',
+    data: { labels: Object.keys(days), datasets:[{ data: Object.values(days), backgroundColor:['#48bb78','#63b3ed'], borderWidth:2, borderColor:'#1a1f2e' }] },
+    options: { plugins:{legend:{position:'bottom'}} }
+  });
+});
+</script>
+{% endblock %}

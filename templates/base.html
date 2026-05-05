@@ -1,1 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Smart HORECA AI{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% if current_user %}
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">🍽️</span>
+      <span class="brand-text">HORECA <strong>AI</strong></span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if request.endpoint=='main.dashboard' %}active{% endif %}">
+        <span class="nav-icon">📊</span><span>Dashboard</span>
+      </a>
+      <a href="{{ url_for('main.predict') }}" class="nav-link {% if request.endpoint=='main.predict' %}active{% endif %}">
+        <span class="nav-icon">🔮</span><span>AI Predict</span>
+      </a>
+      <a href="{{ url_for('main.history') }}" class="nav-link {% if request.endpoint=='main.history' %}active{% endif %}">
+        <span class="nav-icon">📋</span><span>History</span>
+      </a>
+            
+     
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{ current_user['name'][0].upper() }}</div>
+        <div>
+          <div class="user-name">{{ current_user['name'] }}</div>
+          <div class="user-role">{{ current_user['role'] }}</div>
+        </div>
+      </div>
+      <a href="{{ url_for('main.logout') }}" class="logout-btn">Sign out</a>
+    </div>
+  </aside>
 
+  <div class="main-wrap">
+    <header class="topbar">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+      <div class="topbar-right">
+        <span class="datetime" id="clock"></span>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <main class="page-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% else %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }}" style="margin:20px;">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block auth_content %}{% endblock %}
+  {% endif %}
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

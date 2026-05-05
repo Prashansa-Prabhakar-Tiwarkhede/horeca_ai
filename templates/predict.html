@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}AI Predict — HORECA AI{% endblock %}
+{% block page_title %}AI Prediction{% endblock %}
+
+{% block content %}
+<div class="predict-layout">
+
+  <!-- Input Form -->
+  <div class="predict-form-card">
+    <div class="form-heading">
+      <h2>🔮 Smart Prediction</h2>
+      <p>Enter service details to get AI-powered demand & waste forecasts</p>
+    </div>
+
+    <form method="POST" id="predictForm">
+
+      <div class="form-section-title">📍 Service Details</div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Meal Time</label>
+          <div class="pill-group" id="meal-group">
+            {% for v in ['Breakfast','Lunch','Dinner'] %}
+            <button type="button" class="pill {% if loop.first %}active{% endif %}"
+              onclick="setPill('meal-group','Meal_Time','{{ v }}',this)">{{ v }}</button>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="Meal_Time" id="Meal_Time" value="Breakfast"/>
+        </div>
+
+        <div class="field">
+          <label>Service Type</label>
+          <div class="pill-group" id="service-group">
+            {% for v in ['Buffet','Delivery','Dine-in'] %}
+            <button type="button" class="pill {% if loop.first %}active{% endif %}"
+              onclick="setPill('service-group','Service_Type','{{ v }}',this)">{{ v }}</button>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="Service_Type" id="Service_Type" value="Buffet"/>
+        </div>
+
+        <div class="field">
+          <label>Day Type</label>
+          <div class="pill-group" id="day-group">
+            {% for v in ['Weekday','Weekend'] %}
+            <button type="button" class="pill {% if loop.first %}active{% endif %}"
+              onclick="setPill('day-group','Day_Type','{{ v }}',this)">{{ v }}</button>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="Day_Type" id="Day_Type" value="Weekday"/>
+        </div>
+
+        <div class="field">
+          <label>Expected Customers</label>
+          <input type="number" name="Customers_Count" placeholder="e.g. 150" min="1" required
+            class="inp" value="{{ request.form.get('Customers_Count','') }}"/>
+        </div>
+      </div>
+
+      <div class="form-section-title">💰 Pricing</div>
+      <div class="field-grid two-col">
+        <div class="field">
+          <label>Base Price (₹)</label>
+          <input type="number" name="base_price" placeholder="e.g. 180" step="0.01" min="0" required
+            class="inp" value="{{ request.form.get('base_price','') }}"/>
+        </div>
+        <div class="field">
+          <label>Checkout Price (₹)</label>
+          <input type="number" name="checkout_price" placeholder="e.g. 150" step="0.01" min="0" required
+            class="inp" value="{{ request.form.get('checkout_price','') }}"/>
+        </div>
+      </div>
+
+      <div class="form-section-title">📣 Promotions</div>
+      <div class="field-grid two-col">
+        <div class="field">
+          <label>Email Campaign Active?</label>
+          <div class="toggle-row">
+            <button type="button" id="email-yes" class="toggle-btn"
+              onclick="setToggle('email','emailer_for_promotion',1)">Yes</button>
+            <button type="button" id="email-no"  class="toggle-btn active"
+              onclick="setToggle('email','emailer_for_promotion',0)">No</button>
+          </div>
+          <input type="hidden" name="emailer_for_promotion" id="emailer_for_promotion" value="0"/>
+        </div>
+        <div class="field">
+          <label>Featured on Homepage?</label>
+          <div class="toggle-row">
+            <button type="button" id="home-yes" class="toggle-btn"
+              onclick="setToggle('home','homepage_featured',1)">Yes</button>
+            <button type="button" id="home-no"  class="toggle-btn active"
+              onclick="setToggle('home','homepage_featured',0)">No</button>
+          </div>
+          <input type="hidden" name="homepage_featured" id="homepage_featured" value="0"/>
+        </div>
+      </div>
+
+      <!-- Hidden fields with sensible defaults -->
+      <input type="hidden" name="week"      value="75"/>
+      <input type="hidden" name="center_id" value="55"/>
+      <input type="hidden" name="meal_id"   value="1885"/>
+
+      <button type="submit" class="btn-predict" id="submitBtn">
+        <span class="btn-icon">⚡</span> Generate AI Forecast
+      </button>
+    </form>
+  </div>
+
+  <!-- Result Panel -->
+  <div class="result-panel {% if result %}visible{% endif %}" id="resultPanel">
+    {% if result %}
+    <div class="result-heading">
+      <h2>📊 AI Forecast Results</h2>
+      {% if result.alert == 'HIGH' %}
+      <div class="alert-banner high">⚠️ HIGH WASTAGE RISK DETECTED</div>
+      {% elif result.alert == 'MEDIUM' %}
+      <div class="alert-banner medium">🟡 MODERATE WASTE RISK</div>
+      {% else %}
+      <div class="alert-banner low">✅ LOW WASTE RISK — Good to go!</div>
+      {% endif %}
+    </div>
+
+    <div class="result-cards">
+      <div class="res-card green">
+        <div class="res-icon">📦</div>
+        <div class="res-val">{{ result.demand }}</div>
+        <div class="res-lbl">Predicted Orders</div>
+      </div>
+      <div class="res-card blue">
+        <div class="res-icon">🍽️</div>
+        <div class="res-val">{{ result.quantity }}</div>
+        <div class="res-lbl">Suggested Quantity</div>
+      </div>
+      <div class="res-card orange">
+        <div class="res-icon">🗑️</div>
+        <div class="res-val">{{ result.wastage }}</div>
+        <div class="res-lbl">Expected Wastage</div>
+      </div>
+      <div class="res-card {% if result.waste_pct > 25 %}red{% elif result.waste_pct > 15 %}orange{% else %}green{% endif %}">
+        <div class="res-icon">📉</div>
+        <div class="res-val">{{ result.waste_pct }}%</div>
+        <div class="res-lbl">Waste Percentage</div>
+      </div>
+    </div>
+
+    <!-- Waste gauge -->
+    <div class="gauge-section">
+      <div class="gauge-label">Waste Risk Meter</div>
+      <div class="gauge-bar">
+        <div class="gauge-fill {{ result.alert|lower }}" style="width:{{ [result.waste_pct, 100]|min }}%"></div>
+      </div>
+      <div class="gauge-ticks"><span>0%</span><span>15%</span><span>30%</span><span>100%</span></div>
+    </div>
+
+    <!-- Recommendation -->
+    <div class="recommendation-box">
+      <div class="rec-title">💡 AI Recommendation</div>
+      {% if result.alert == 'HIGH' %}
+        <p>Consider reducing prepared quantity by approximately <strong>{{ (result.wastage * 0.6)|round(1) }} units</strong>. Implement portion control and activate demand-side promotion to increase orders.</p>
+      {% elif result.alert == 'MEDIUM' %}
+        <p>Moderate waste risk. Monitor closely. Prepare <strong>{{ result.quantity }} units</strong> but keep contingency buffer ready. Consider a small promotion.</p>
+      {% else %}
+        <p>Operations look optimal! Prepare <strong>{{ result.quantity }} units</strong> as suggested. Waste is well within acceptable range.</p>
+      {% endif %}
+    </div>
+
+    <a href="{{ url_for('main.predict') }}" class="btn-secondary full">Make Another Prediction</a>
+    {% else %}
+    <div class="result-placeholder">
+      <div class="placeholder-icon">🤖</div>
+      <h3>AI Ready</h3>
+      <p>Fill in the form on the left and click <strong>Generate AI Forecast</strong> to see predictions here.</p>
+      <div class="placeholder-hints">
+        <div class="hint">📈 Demand forecast</div>
+        <div class="hint">🍽️ Quantity suggestion</div>
+        <div class="hint">🗑️ Wastage estimate</div>
+        <div class="hint">⚠️ Risk alert</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setPill(groupId, fieldId, value, el) {
+  document.querySelectorAll('#' + groupId + ' .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(fieldId).value = value;
+}
+function setToggle(name, fieldId, val) {
+  document.getElementById(name+'-yes').classList.toggle('active', val===1);
+  document.getElementById(name+'-no').classList.toggle('active',  val===0);
+  document.getElementById(fieldId).value = val;
+}
+document.getElementById('predictForm').addEventListener('submit', function() {
+  const btn = document.getElementById('submitBtn');
+  btn.innerHTML = '<span class="spinner"></span> Forecasting...';
+  btn.disabled = true;
+});
+</script>
+{% endblock %}
