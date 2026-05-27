@@ -1,0 +1,80 @@
+{
+  "demand": {
+    "task": "Demand Prediction",
+    "best_algo": "LinearRegression",
+    "best_metrics": {
+      "MAE": 13.3019,
+      "RMSE": 24.0459,
+      "R2": 0.9936
+    },
+    "all": {
+      "LinearRegression": {
+        "MAE": 13.3019,
+        "RMSE": 24.0459,
+        "R2": 0.9936
+      },
+      "RandomForest": {
+        "MAE": 13.2095,
+        "RMSE": 30.1593,
+        "R2": 0.99
+      },
+      "GradientBoosting": {
+        "MAE": 13.6159,
+        "RMSE": 30.4768,
+        "R2": 0.9898
+      }
+    }
+  },
+  "wastage": {
+    "task": "Wastage Prediction",
+    "best_algo": "LinearRegression",
+    "best_metrics": {
+      "MAE": 13.8319,
+      "RMSE": 24.4311,
+      "R2": 0.8169
+    },
+    "all": {
+      "LinearRegression": {
+        "MAE": 13.8319,
+        "RMSE": 24.4311,
+        "R2": 0.8169
+      },
+      "RandomForest": {
+        "MAE": 14.0038,
+        "RMSE": 26.9866,
+        "R2": 0.7765
+      },
+      "GradientBoosting": {
+        "MAE": 13.7508,
+        "RMSE": 25.9097,
+        "R2": 0.794
+      }
+    }
+  },
+  "quantity": {
+    "task": "Quantity Recommendation",
+    "best_algo": "LinearRegression",
+    "best_metrics": {
+      "MAE": 20.0334,
+      "RMSE": 37.8459,
+      "R2": 0.9884
+    },
+    "all": {
+      "LinearRegression": {
+        "MAE": 20.0334,
+        "RMSE": 37.8459,
+        "R2": 0.9884
+      },
+      "RandomForest": {
+        "MAE": 22.0261,
+        "RMSE": 51.8316,
+        "R2": 0.9783
+      },
+      "GradientBoosting": {
+        "MAE": 21.077,
+        "RMSE": 49.008,
+        "R2": 0.9806
+      }
+    }
+  }
+}
